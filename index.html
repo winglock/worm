@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Succinct Snake Game</title>
+  <link rel="stylesheet" href="/static/assets/styles.css">
+  <style>
+    body {
+      background-color: #000;
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      font-size: 18px;
+      color: #ff00ff;
+    }
+    /* 헤더 왼쪽: 로고와 텍스트, 오른쪽: 스티커 버튼 */
+    header .left {
+      display: flex;
+      align-items: center;
+    }
+    header .left img {
+      width: 40px;
+      height: auto;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    header .right a {
+      display: inline-block;
+      width: 38px;
+      height: 38px;
+    }
+    header .right a img {
+      width: 38px;
+      height: 38px;
+      display: block;
+    }
+    #score {
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+    #start-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background-color: #ff00ff;
+      color: #000;
+    }
+    /* 컨테이너 래퍼: 게임 보드를 중앙에 배치 */
+    #container-wrapper {
+      position: relative;
+      width: 100%;
+      height: 480px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    /* 게임 보드: 중앙에 위치 */
+    #game-container {
+      border: 1px solid #333;
+      width: 640px;
+      height: 480px;
+      position: relative;
+      z-index: 2;
+    }
+    /* 수정된 globe 컨테이너: 크기를 반으로 줄이고 완전 좌측에 배치 */
+    #globe-container {
+      position: absolute;
+      width: 320px;
+      height: 240px;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+    #rotating-globe {
+      width: 100%;
+      height: 100%;
+      animation: rotate 5s linear infinite;
+    }
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    /* JSON 로그 박스(정중앙) */
+    #json-log {
+      width: 320px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ff00ff;
+      margin: 10px auto;
+      font-size: 14px;
+      color: #ff00ff;
+      background-color: #000;
+      padding: 5px;
+      box-sizing: border-box;
+    }
+    /* claim 버튼 스타일 (80x80) */
+    #claim-btn {
+      width: 80px;
+      height: 80px;
+      background-color: #ff4fff;
+      border: none;
+      border-radius: 6px;
+      color: black;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    /* bruh 비디오 스타일 - 기본 숨김 */
+    #bruh-video {
+      display: none;
+      margin-top: 20px;
+    }
+    /* 추가: 우측에 배치할 zkVM 버튼 컨테이너 */
+    #zkvm-container {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      text-align: center;
+    }
+    #zkvm-btn {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background-color: #00ff00;
+      color: #000;
+    }
+    #zkvm-board {
+      margin-top: 10px;
+      width: 200px;
+      height: 400px;
+      background-color: #111;
+      color: #00ff00;
+      overflow-y: auto;
+      border: 1px solid #00ff00;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 배경 이미지 영역: 핑크 세로선 바로 아래 -->
+  <div id="bg-image-area"></div>
+
+  <header>
+    <div class="left">
+      <img src="/static/assets/succinct-icon-pink.svg" alt="Succinct Icon">
+      Succinct proov to worm (made by. wingrockXBT)
+    </div>
+    <div class="right">
+      <a href="https://t.me/cybertruck666" target="_blank">
+        <img src="/static/assets/sticker.webp" alt="Sticker Button">
+      </a>
+    </div>
+  </header>
+  
+  <div id="score">Score: 0</div>
+  <button id="start-btn">Start Game</button>
+  
+  <!-- 컨테이너 래퍼: 게임 보드는 중앙에 배치 -->
+  <div id="container-wrapper">
+    <!-- 게임 보드 -->
+    <div id="game-container">
+      <canvas id="game-canvas" width="640" height="480"></canvas>
+    </div>
+    <!-- 좌측에 배치할 globe -->
+    <div id="globe-container">
+      <img id="rotating-globe" src="/static/assets/globe.svg" alt="Rotating Globe">
+    </div>
+    <!-- 추가: 우측에 배치할 zkVM 시뮬레이션 컨테이너 -->
+    <div id="zkvm-container">
+      <button id="zkvm-btn">Simulate zkVM</button>
+      <!-- 단계별 실행 기록을 보여줄 보드 -->
+      <div id="zkvm-board"></div>
+    </div>
+  </div>
+  
+  <!-- JSON 로그 박스 (정중앙) -->
+  <div id="json-log"></div>
+  
+  <!-- claim 버튼과 bruh.mp4 요소 (원래대로 복원) -->
+  <div id="claim-container" style="text-align: center; margin-top: 20px;">
+    <button id="claim-btn">claim 10000 start</button>
+  </div>
+  <video id="bruh-video" width="640" controls>
+    <source src="/static/assets/bruh.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+  
+  <div class="glitch-overlay"></div>
+
+  <!-- Terms-of-Use Modal -->
+  <div id="terms-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+    <div style="background: #000; border: 2px solid #ff00ff; padding: 20px; border-radius: 8px; max-width: 500px; text-align: left; color: white; font-family: Arial, sans-serif;">
+      <h2 style="color: #ff00ff;">Terms of Use</h2>
+      <p>This page was built as a personal project and a contribution to the Succinct community, aimed at making zk concepts more accessible and friendly.</p>
+      <p>The SP1 zkVM simulation is a heavily condensed and imitated version implemented primarily in JavaScript.</p>
+      <p>I worked really hard on this project – please tag or follow on X: <strong>@0xCRASHOUT @wingrockXBT @0x_wingrock</strong> and drop a comment or follow. and DEV discord account is <strong> @winglak </strong>, Thanks!</p>
+      <button id="accept-btn" style="margin-top: 20px; padding: 10px 20px; background: #ff00ff; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; color: black;">Accept</button>
+    </div>
+  </div>
+
+  <script src="/static/assets/game.js"></script>
+  <script src="/static/assets/zkvmSim.js"></script>
+  <script>
+    // Check if terms have been accepted on previous visit
+    if(localStorage.getItem('termsAccepted')) {
+      document.getElementById('terms-modal').style.display = 'none';
+    } else {
+      document.getElementById('terms-modal').style.display = 'flex';
+    }
+
+    // When user clicks Accept, set flag and hide modal
+    document.getElementById('accept-btn').addEventListener('click', function(){
+      localStorage.setItem('termsAccepted', 'true');
+      document.getElementById('terms-modal').style.display = 'none';
+    });
+  </script>
+  <!-- 약관 모달 관련 스크립트 (index.html 내, </body> 직전에 삽입) -->
+  <script>
+    // 항상 약관 모달을 보이게 함
+    document.getElementById('terms-modal').style.display = 'flex';
+
+    // 사용자가 "Accept" 버튼을 클릭하면 모달을 숨김 (하지만 기록은 저장하지 않음)
+    document.getElementById('accept-btn').addEventListener('click', function(){
+      document.getElementById('terms-modal').style.display = 'none';
+    });
+  </script>
+</body>
+</html>
